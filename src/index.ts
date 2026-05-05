@@ -2,9 +2,32 @@ import "dotenv/config";
 import { loadBrands } from "./config.js";
 import { listPending } from "./drive/client.js";
 import { processArticle } from "./processArticle.js";
-import type { BrandConfig } from "./types.js";
+import type { BrandConfig, ProcessOptions } from "./types.js";
+import { upsertEntry } from "./state.js";
 
-async function tickBrand(brand: BrandConfig): Promise<void> {
+interface CliFlags {
+  once: boolean;
+  dryRun: boolean;
+  skipImages: boolean;
+  brand: string | null;
+}
+
+function parseFlags(argv: string[]): CliFlags {
+  const flags: CliFlags = {
+    once: argv.includes("--once"),
+    dryRun: argv.includes("--dry-run"),
+    skipImages: argv.includes("--skip-images"),
+    brand: null,
+  };
+  const idx = argv.findIndex((a) => a === "--brand");
+  if (idx >= 0 && argv[idx + 1]) flags.brand = argv[idx + 1];
+  return flags;
+}
+
+async function tickBrand(
+  brand: BrandConfig,
+  opts: ProcessOptions,
+): Promise<void> {
   let files;
   try {
     files = await listPending(brand.drive.pendingFolderId);
@@ -19,26 +42,52 @@ async function tickBrand(brand: BrandConfig): Promise<void> {
   console.log(`[${brand.id}] ${files.length} pending file(s)`);
   for (const file of files) {
     try {
-      await processArticle(brand, file);
+      await processArticle(brand, file, opts);
     } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
       console.error(`[${brand.id}] failed: ${file.name}`, err);
+      if (!opts.dryRun) {
+        upsertEntry(brand.id, file.id, {
+          fileName: file.name,
+          status: "failed",
+          error: message,
+        });
+      }
     }
   }
 }
 
-async function tickAll(brands: BrandConfig[]): Promise<void> {
+async function tickAll(
+  brands: BrandConfig[],
+  opts: ProcessOptions,
+): Promise<void> {
   for (const brand of brands) {
-    await tickBrand(brand);
+    await tickBrand(brand, opts);
   }
 }
 
 async function main(): Promise<void> {
-  const brands = loadBrands();
-  console.log(`loaded ${brands.length} brand(s): ${brands.map((b) => b.id).join(", ")}`);
+  const flags = parseFlags(process.argv.slice(2));
+  let brands = loadBrands();
+  if (flags.brand) {
+    brands = brands.filter((b) => b.id === flags.brand);
+    if (brands.length === 0) {
+      throw new Error(`brand "${flags.brand}" not found in BRANDS_DIR`);
+    }
+  }
+  console.log(
+    `loaded ${brands.length} brand(s): ${brands.map((b) => b.id).join(", ")}` +
+      (flags.dryRun ? " [DRY RUN]" : "") +
+      (flags.skipImages ? " [SKIP IMAGES]" : ""),
+  );
 
-  const once = process.argv.includes("--once");
-  if (once) {
-    await tickAll(brands);
+  const opts: ProcessOptions = {
+    dryRun: flags.dryRun,
+    skipImages: flags.skipImages,
+  };
+
+  if (flags.once || flags.dryRun) {
+    await tickAll(brands, opts);
     return;
   }
 
@@ -50,7 +99,7 @@ async function main(): Promise<void> {
     if (running) return;
     running = true;
     try {
-      await tickAll(brands);
+      await tickAll(brands, opts);
     } finally {
       running = false;
     }

@@ -28,6 +28,30 @@ export interface BrandConfig {
   };
 }
 
+export interface ProcessOptions {
+  dryRun: boolean;
+  skipImages: boolean;
+}
+
+export interface ArticleStateEntry {
+  fileId: string;
+  fileName: string;
+  status: "in_progress" | "done" | "failed";
+  title?: string;
+  slug?: string;
+  heroPrompt?: string;
+  heroMedia?: UploadedMedia;
+  sectionPrompts?: string[];
+  sectionMedia?: (UploadedMedia | null)[];
+  postId?: number;
+  postLink?: string;
+  startedAt: string;
+  updatedAt: string;
+  error?: string;
+}
+
+export type BrandState = Record<string, ArticleStateEntry>;
+
 export interface Section {
   heading: string;
   bodyHtml: string;

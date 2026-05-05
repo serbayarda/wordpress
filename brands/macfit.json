@@ -8,8 +8,8 @@
   },
   "wordpress": {
     "baseUrl": "https://www.macfit.com",
-    "username": "REPLACE_WITH_WP_USER",
-    "applicationPassword": "REPLACE_WITH_APP_PASSWORD",
+    "username": "",
+    "applicationPassword": "",
     "defaultCategoryId": null,
     "defaultAuthorId": null
   },
