@@ -1,0 +1,27 @@
+{
+  "id": "macfit",
+  "name": "Macfit",
+  "language": "tr",
+  "drive": {
+    "pendingFolderId": "REPLACE_WITH_PENDING_FOLDER_ID",
+    "processedFolderId": "REPLACE_WITH_PROCESSED_FOLDER_ID"
+  },
+  "wordpress": {
+    "baseUrl": "https://www.macfit.com",
+    "username": "REPLACE_WITH_WP_USER",
+    "applicationPassword": "REPLACE_WITH_APP_PASSWORD",
+    "defaultCategoryId": null,
+    "defaultAuthorId": null
+  },
+  "image": {
+    "provider": "openai",
+    "size": "1792x1024",
+    "style": "Realistic editorial photograph, natural lighting, magazine quality, 16:9 framing",
+    "negative": "no text overlays, no watermarks, no logos"
+  },
+  "template": "macplus-default",
+  "featuredPosts": {
+    "count": 3,
+    "sameCategoryOnly": true
+  }
+}
